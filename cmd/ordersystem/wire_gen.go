@@ -8,13 +8,17 @@ package main
 
 import (
 	"database/sql"
+	"github.com/google/wire"
 	"github.com/samuelralmeida/pge-clean-architecture/internal/entity"
 	"github.com/samuelralmeida/pge-clean-architecture/internal/event"
 	"github.com/samuelralmeida/pge-clean-architecture/internal/infra/database"
 	"github.com/samuelralmeida/pge-clean-architecture/internal/infra/web"
 	"github.com/samuelralmeida/pge-clean-architecture/internal/usecase"
 	"github.com/samuelralmeida/pge-clean-architecture/pkg/events"
-	"github.com/google/wire"
+)
+
+import (
+	_ "github.com/go-sql-driver/mysql"
 )
 
 // Injectors from wire.go:
@@ -31,6 +35,12 @@ func NewWebOrderHandler(db *sql.DB, eventDispatcher events.EventDispatcherInterf
 	orderCreated := event.NewOrderCreated()
 	webOrderHandler := web.NewWebOrderHandler(eventDispatcher, orderRepository, orderCreated)
 	return webOrderHandler
+}
+
+func NewListOrderUseCase(db *sql.DB) *usecase.ListOrderUseCase {
+	orderRepository := database.NewOrderRepository(db)
+	listOrderUseCase := usecase.NewListOrderUseCase(orderRepository)
+	return listOrderUseCase
 }
 
 // wire.go:
