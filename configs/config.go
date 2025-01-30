@@ -1,33 +1,49 @@
 package configs
 
-import "github.com/spf13/viper"
+import (
+	"log"
+	"os"
 
-type conf struct {
-	DBDriver          string `mapstructure:"DB_DRIVER"`
-	DBHost            string `mapstructure:"DB_HOST"`
-	DBPort            string `mapstructure:"DB_PORT"`
-	DBUser            string `mapstructure:"DB_USER"`
-	DBPassword        string `mapstructure:"DB_PASSWORD"`
-	DBName            string `mapstructure:"DB_NAME"`
-	WebServerPort     string `mapstructure:"WEB_SERVER_PORT"`
-	GRPCServerPort    string `mapstructure:"GRPC_SERVER_PORT"`
-	GraphQLServerPort string `mapstructure:"GRAPHQL_SERVER_PORT"`
+	"github.com/joho/godotenv"
+)
+
+type Conf struct {
+	DBDriver          string
+	DBHost            string
+	DBPort            string
+	DBUser            string
+	DBPassword        string
+	DBName            string
+	WebServerPort     string
+	GRPCServerPort    string
+	GraphQLServerPort string
+	RabbitMQUser      string
+	RabbitMQPass      string
+	RabbitMQHost      string
+	RabbitMQPort      string
 }
 
-func LoadConfig(path string) (*conf, error) {
-	var cfg *conf
-	viper.SetConfigName("app_config")
-	viper.SetConfigType("env")
-	viper.AddConfigPath(path)
-	viper.SetConfigFile(".env")
-	viper.AutomaticEnv()
-	err := viper.ReadInConfig()
+func LoadConfig() (*Conf, error) {
+	err := godotenv.Load()
 	if err != nil {
-		panic(err)
+		log.Println("no .env file loaded")
 	}
-	err = viper.Unmarshal(&cfg)
-	if err != nil {
-		panic(err)
-	}
-	return cfg, err
+
+	var cfg Conf
+
+	cfg.DBDriver = os.Getenv("DB_DRIVER")
+	cfg.DBHost = os.Getenv("DB_HOST")
+	cfg.DBPort = os.Getenv("DB_PORT")
+	cfg.DBUser = os.Getenv("DB_USER")
+	cfg.DBPassword = os.Getenv("DB_PASSWORD")
+	cfg.DBName = os.Getenv("DB_NAME")
+	cfg.WebServerPort = os.Getenv("WEB_SERVER_PORT")
+	cfg.GRPCServerPort = os.Getenv("GRPC_SERVER_PORT")
+	cfg.GraphQLServerPort = os.Getenv("GRAPHQL_SERVER_PORT")
+	cfg.RabbitMQUser = os.Getenv("RABBITMQ_USER")
+	cfg.RabbitMQPass = os.Getenv("RABBITMQ_PASS")
+	cfg.RabbitMQHost = os.Getenv("RABBITMQ_HOST")
+	cfg.RabbitMQPort = os.Getenv("RABBITMQ_PORT")
+
+	return &cfg, nil
 }

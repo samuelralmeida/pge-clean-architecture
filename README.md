@@ -21,13 +21,14 @@ Inclua um README.md com os passos a serem executados no desafio e a porta em que
 
 ## ORIENTAÇÕES PARA EXECUÇÃO
 
-1. na raiz do projeto execute `docker compose -f docker-compose.yaml up` para criação do banco de dados
-2. navegue até o diretório com o main do projeto: `cd cmd/ordersystem`
-3. execute o projeto: `go run main.go wire_gen.go`
+1. na raiz do projeto execute `docker compose -f docker-compose.yaml up`
+    - vai subir o banco de dados e fazer a migration
+    - vai subir o RabbitMQ
+    - vai subir a aplicação e disponibilizar as três APIs: rest, grpc, graphql
 
 ### PORTAS DAS APIS
 
-- webserver => 8000
+- rest => 8000
 - grpc => 50051
 - graphql => 8080
 

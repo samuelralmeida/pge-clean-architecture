@@ -24,18 +24,18 @@ import (
 )
 
 func main() {
-	configs, err := configs.LoadConfig(".")
+	configs, err := configs.LoadConfig()
 	if err != nil {
 		panic(err)
 	}
 
-	db, err := sql.Open(configs.DBDriver, fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", configs.DBUser, configs.DBPassword, configs.DBHost, configs.DBPort, configs.DBName))
+	db, err := openMysqlConn(configs)
 	if err != nil {
 		panic(err)
 	}
 	defer db.Close()
 
-	rabbitMQChannel := getRabbitMQChannel()
+	rabbitMQChannel := getRabbitMQChannel(configs)
 
 	eventDispatcher := events.NewEventDispatcher()
 	eventDispatcher.Register("OrderCreated", &handler.OrderCreatedHandler{
@@ -73,8 +73,9 @@ func main() {
 	http.ListenAndServe(":"+configs.GraphQLServerPort, nil)
 }
 
-func getRabbitMQChannel() *amqp.Channel {
-	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
+func getRabbitMQChannel(configs *configs.Conf) *amqp.Channel {
+	url := fmt.Sprintf("amqp://%s:%s@%s:%s/", configs.RabbitMQUser, configs.RabbitMQPass, configs.RabbitMQHost, configs.RabbitMQPort)
+	conn, err := amqp.Dial(url)
 	if err != nil {
 		panic(err)
 	}
@@ -83,4 +84,35 @@ func getRabbitMQChannel() *amqp.Channel {
 		panic(err)
 	}
 	return ch
+}
+
+func openMysqlConn(configs *configs.Conf) (*sql.DB, error) {
+	db, err := sql.Open(configs.DBDriver, fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", configs.DBUser, configs.DBPassword, configs.DBHost, configs.DBPort, configs.DBName))
+	if err != nil {
+		return nil, fmt.Errorf("error to open database: %w", err)
+	}
+
+	err = db.Ping()
+	if err != nil {
+		return nil, fmt.Errorf("error to ping database: %w", err)
+	}
+
+	err = mysqlMigrate(db)
+	if err != nil {
+		return nil, fmt.Errorf("error run migrate on database: %w", err)
+	}
+
+	return db, nil
+}
+
+func mysqlMigrate(db *sql.DB) error {
+	_, err := db.Exec(`
+		CREATE TABLE IF NOT EXISTS orders (
+			id VARCHAR(255) PRIMARY KEY,
+			price DECIMAL(15, 2),
+			tax DECIMAL(15, 2),
+			final_price DECIMAL(15, 2)
+		);
+	`)
+	return err
 }

@@ -1,16 +1,48 @@
 services:
-  mysql:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+      - "50051:50051"
+      - "8080:8080"
+    environment:
+      DB_DRIVER: mysql
+      DB_HOST: database
+      DB_PORT: 3306
+      DB_USER: admin
+      DB_PASSWORD: secret
+      DB_NAME: orders
+      WEB_SERVER_PORT: :8000
+      GRPC_SERVER_PORT: 50051
+      GRAPHQL_SERVER_PORT: 8080
+      RABBITMQ_USER: guest
+      RABBITMQ_PASS: guest
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+    restart: always
+    depends_on: 
+      database:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  database:
     image: mysql:5.7
-    container_name: mysql
+    container_name: mysqldb
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: orders
-      MYSQL_PASSWORD: root
+      MYSQL_PASSWORD: secret
+      MYSQL_USER: admin
     ports:
       - 3306:3306
-    volumes:
-      - .docker/mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-psecret", "-uadmin", "--protocol","tcp"]
+      timeout: 20s
+      retries: 10
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -22,3 +54,8 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 30s
+      retries: 3
